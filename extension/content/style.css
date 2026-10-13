@@ -1,0 +1,23 @@
+/* 웹페이지: 원문 아래에 붙는 번역문 */
+.murmur-tr { display: block; margin-top: 0.3em; padding-left: 0.5em; border-left: 3px solid #f5c542; opacity: 0.95; }
+.murmur-tr.murmur-wait { color: #9ca3af; }
+
+/* 유튜브: 기본 자막 대신 원문+번역 두 줄 자막 상자 */
+#movie_player.murmur-on .ytp-caption-window-container { display: none !important; }
+.murmur-yt {
+  position: absolute; left: 50%; bottom: 9%; transform: translateX(-50%);
+  max-width: 82%; padding: 6px 14px 8px; border-radius: 8px; z-index: 60;
+  background: rgba(8, 8, 8, 0.78); text-align: center; pointer-events: none;
+}
+.murmur-yt[hidden] { display: none; }
+.murmur-yt-en { color: #fff; font: 500 clamp(14px, 1.7vw, 24px)/1.35 -apple-system, sans-serif; }
+.murmur-yt-ko { color: #ffd54a; font: 700 clamp(16px, 2.1vw, 30px)/1.4 "Apple SD Gothic Neo", sans-serif; margin-top: 2px; }
+
+/* 화면 오른쪽 플로팅 번역 버튼 */
+#murmur-float {
+  position: fixed; right: 18px; top: 45%; z-index: 2147483647;
+  width: 52px; height: 52px; border: 0; border-radius: 50%;
+  background: #2453d6; color: #fff; font: 700 14px/1 "Apple SD Gothic Neo", sans-serif;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); cursor: pointer;
+}
+#murmur-float.on { background: #0a7a3d; }

@@ -1,0 +1,7 @@
+body { width: 260px; margin: 0; padding: 14px; font: 13px/1.5 -apple-system, "Apple SD Gothic Neo", sans-serif; }
+h1 { font-size: 15px; margin: 0 0 6px; }
+#status { margin: 0 0 10px; color: #555; }
+#status.ok { color: #0a7a3d; }
+#status.bad { color: #b42318; }
+button { width: 100%; padding: 8px; margin-bottom: 10px; border: 0; border-radius: 8px; background: #2453d6; color: #fff; font-weight: 600; cursor: pointer; }
+.note { color: #777; font-size: 11px; margin: 8px 0 0; }
