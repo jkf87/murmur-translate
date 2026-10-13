@@ -1,20 +1,23 @@
 # Murmur 로컬 번역 — 내 컴퓨터에서 도는 이중 언어 번역 크롬 확장
 
 코난쌤 유튜브 핸즈온 영상의 실습 자료예요. 웹페이지와 유튜브 자막을 **원문 + 한국어**로 함께 보여 주는 크롬 확장을 만들고, 번역은 클라우드가 아니라 내 맥에서 도는 [murmur](https://github.com/jkf87/murmur)의 NLLB-200 번역 엔진으로 처리해요.
+자막 파일이 없는 영상이나 **라이브 방송**은 탭 소리를 murmur의 받아쓰기(whisper)로 실시간 전사해서 같은 두 줄 자막으로 보여 줘요.
 
 ```
-크롬 확장 (웹페이지 문단 / 유튜브 자막)
-      │ chrome.runtime.sendMessage
-background.js ── fetch ──▶ 로컬 번역 서버 (bridge/server.py, 127.0.0.1:8790)
+크롬 확장 (웹페이지 문단 / 유튜브 자막)          실시간 자막: 탭 소리
+      │ chrome.runtime.sendMessage                 │ tabCapture → offscreen.html (16kHz, 3초씩)
+background.js ── fetch ──▶ 로컬 서버 (bridge/server.py, 127.0.0.1:8790) ◀── POST /transcribe
                                   │
-                           murmur.translate (NLLB-200 600M, CTranslate2, CPU)
+              murmur.translate (NLLB-200 600M, CTranslate2, CPU)
+              murmur.stt (whisper-small, mlx-whisper, Apple Silicon) — 실시간 자막만
 ```
 
 > 영상에서는 기존 번역 확장(Immersive Translate)이 어떤 구조로 동작하는지 REA로 살펴본 뒤, 그 구조를 참고해 **코드를 처음부터 새로 썼어요.** 이 저장소에는 그 확장의 코드나 리소스가 들어 있지 않아요.
 
 ## 준비물
 - Apple Silicon 또는 Intel 맥, 리눅스도 가능(번역 서버는 CPU로 돌아요)
-- Python 3.11 이상, 디스크 약 3GB(번역 모델 2.3GB)
+- Python 3.11 이상, 디스크 약 3GB(번역 모델 2.3GB, 실시간 자막용 whisper-small 약 460MB)
+- 실시간 자막은 **Apple Silicon 맥**에서만 돼요(murmur 받아쓰기가 mlx-whisper를 써요). 번역은 다른 환경에서도 돼요
 - Chrome 또는 Chromium 계열 브라우저(개발자 모드로 확장 올리기)
 
 ## 따라 하기
@@ -23,12 +26,14 @@ background.js ── fetch ──▶ 로컬 번역 서버 (bridge/server.py, 127
 ```bash
 git clone https://github.com/jkf87/murmur-translate
 cd murmur-translate
-./setup.sh          # 가상환경 + murmur 코어 + NLLB 모델(약 2.3GB) 받기, 처음 한 번만
+./setup.sh          # 가상환경 + murmur 코어 + NLLB 모델(약 2.3GB) + 받아쓰기(whisper-small) 받기, 처음 한 번만
 ./start.sh          # "murmur 번역 서버 준비 완료 → http://127.0.0.1:8790"
+                    # "실시간 자막: murmur whisper 전사 켜짐 (/transcribe)"
 ```
 다른 터미널에서 확인:
 ```bash
 ./try-translate.sh "Nothing leaves your computer."
+./try-transcribe.sh          # say로 만든 영어 음성을 3초씩 받아쓰고 번역 (오디오 파일을 인자로 줘도 돼요)
 ```
 
 ### 2. 확장 올리기
@@ -43,19 +48,30 @@ cd murmur-translate
 ### 4. 유튜브 이중 자막
 영어 자막이 있는 영상을 열고 자막(CC)을 켜면, 유튜브 기본 자막 대신 **원문(흰색) + 한국어(노란색)** 두 줄 자막이 떠요. 팝업의 "유튜브 이중 자막" 체크로 끄고 켤 수 있어요.
 
+### 5. 실시간 자막 (자막 없는 영상 · 라이브 방송)
+1. 영상을 재생 중인 탭에서 확장 아이콘 → **실시간 자막 켜기**
+2. 3초쯤 뒤부터 그 탭에서 나는 소리를 받아써서 **원문 + 한국어** 두 줄로 띄워요. 유튜브에서는 기본 자막 자리에, 다른 사이트는 동영상 아래쪽에 떠요
+3. 끌 때는 같은 버튼(**실시간 자막 끄기**)을 누르거나 탭을 닫으면 돼요
+
+자막 파일이 있는 유튜브 영상은 4번 방식(자막 파일 번역)이 더 정확하고 빨라요. 실시간 자막은 자막 파일이 없을 때 쓰세요.
+탭에 공유 중 표시가 뜨는 건 확장이 그 탭 소리를 받는 중이라는 뜻이에요. 소리는 이 컴퓨터의 서버(127.0.0.1)로만 가요.
+
 ## 어떻게 동작하나
 | 파일 | 하는 일 |
 |---|---|
 | `extension/content/youtube-hook.js` | 유튜브 페이지 안(MAIN world)에서 플레이어가 받아 온 자막 파일(`/api/timedtext`) 응답을 복사해 넘겨요. 요청을 새로 만들지 않아요. |
 | `extension/content/youtube.js` | 자막을 줄 단위로 나누고, 지금 재생 위치에 가까운 줄부터 묶어서 번역해 두었다가 영상 시간에 맞춰 띄워요. |
 | `extension/content/page.js` | 문단(p, li, h1~h6 …)을 골라 화면에 보이는 것부터, 화면 아래 두 장 분량까지 미리 번역해요. 나중에 생긴 문단도 따라가요. |
-| `extension/background.js` | 웹페이지가 아니라 확장만 로컬 서버(127.0.0.1:8790)와 이야기해요. |
-| `bridge/server.py` | murmur의 `Translator`로 NLLB 모델을 불러, 여러 문단을 한 번에 묶어 번역하고 결과를 캐시해요. |
+| `extension/background.js` | 웹페이지가 아니라 확장만 로컬 서버(127.0.0.1:8790)와 이야기해요. 실시간 자막을 켜고 끄고, 결과를 그 탭으로 넘겨요. |
+| `extension/offscreen.js` | 실시간 자막: 팝업에서 받은 탭 오디오 스트림을 16kHz 모노로 줄여 3초마다 `/transcribe`로 보내요. 원래 소리는 그대로 다시 들려줘요. |
+| `extension/content/live.js` | 실시간 자막 두 줄 상자를 유튜브 플레이어 안이나 동영상 아래쪽에 띄워요. |
+| `bridge/server.py` | murmur의 `Translator`로 NLLB 모델을 불러, 여러 문단을 한 번에 묶어 번역하고 결과를 캐시해요. `/transcribe`는 murmur 엔진과 같은 순서(앞 2초 겹쳐 듣기 → 음성 구간 검사 → whisper 받아쓰기 → 환각 거르기 → 겹친 말 지우기 → 번역)로 실시간 자막을 만들어요. |
 
 ## 한계
 - NLLB-200 600M은 작은 번역 모델이라 문장이 어색하거나 틀릴 때가 있어요. (예: "Under Artemis" → "아르테미스 주하에")
 - CPU에서 문장당 약 0.5초 걸려요. 그래서 유튜브는 앞으로 나올 자막을 미리 번역해 둬요.
-- 유튜브 자막이 없는 영상, 라이브 방송은 지원하지 않아요. 소리를 바로 받아쓰려면 murmur 앱의 컴퓨터 오디오 전사 기능을 쓰세요.
+- 실시간 자막은 3초 단위라 말보다 3~4초 늦게 떠요. 조각 경계에서 낱말이 잘려 가끔 틀리게 들리거나(whisper-small) 한두 낱말이 겹칠 수 있어요.
+- 실시간 자막은 한 번에 한 탭만 들어요. Apple Silicon 맥이 아니면 버튼이 꺼져 있어요.
 - 유튜브 내부 구조(자막 요청 주소, 플레이어 요소 이름)가 바뀌면 동작하지 않을 수 있어요.
 - 번역 방향은 영어 → 한국어로 고정했어요(`source`, `target` 값으로 바꿀 수 있어요).
 

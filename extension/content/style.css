@@ -21,3 +21,15 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); cursor: pointer;
 }
 #murmur-float.on { background: #0a7a3d; }
+
+/* 실시간 자막(음성 인식): 유튜브에선 기본 자막과 파일 자막 상자를 숨기고 이 상자만 보인다 */
+#movie_player.murmur-live-on .ytp-caption-window-container,
+#movie_player.murmur-live-on .murmur-yt:not(.murmur-live) { display: none !important; }
+.murmur-live[hidden] { display: none; }
+.murmur-live-float {
+  position: fixed; transform: translate(-50%, -100%); z-index: 2147483646;
+  max-width: 80vw; padding: 6px 14px 8px; border-radius: 8px;
+  background: rgba(8, 8, 8, 0.78); text-align: center; pointer-events: none;
+}
+.murmur-live-float .murmur-yt-en { color: #fff; font: 500 18px/1.35 -apple-system, sans-serif; }
+.murmur-live-float .murmur-yt-ko { color: #ffd54a; font: 700 22px/1.4 "Apple SD Gothic Neo", sans-serif; margin-top: 2px; }

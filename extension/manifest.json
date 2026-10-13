@@ -1,11 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Murmur 로컬 번역",
-  "version": "0.1.0",
-  "description": "murmur(NLLB-200) 로컬 번역 서버로 웹페이지와 유튜브 자막을 이중 언어로 보여 주는 실습용 확장",
+  "version": "0.2.0",
+  "description": "murmur 로컬 서버로 웹페이지와 유튜브 자막을 이중 언어로 보여 주고, 자막이 없는 영상·라이브는 탭 소리를 받아써서(whisper) 실시간 자막을 띄우는 실습용 확장",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "tabCapture",
+    "offscreen"
   ],
   "host_permissions": [
     "http://127.0.0.1:8790/*"
@@ -50,6 +52,18 @@
       "js": [
         "content/page.js",
         "content/float.js"
+      ],
+      "css": [
+        "content/style.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/live.js"
       ],
       "css": [
         "content/style.css"

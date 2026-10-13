@@ -5,3 +5,6 @@ h1 { font-size: 15px; margin: 0 0 6px; }
 #status.bad { color: #b42318; }
 button { width: 100%; padding: 8px; margin-bottom: 10px; border: 0; border-radius: 8px; background: #2453d6; color: #fff; font-weight: 600; cursor: pointer; }
 .note { color: #777; font-size: 11px; margin: 8px 0 0; }
+button.live { background: #0a7a3d; margin-top: 10px; margin-bottom: 0; }
+button.live.on { background: #b42318; }
+button:disabled { background: #9ca3af; cursor: default; }
